@@ -5,6 +5,9 @@ from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.core.signing import SigningService
+
+from fastapi.testclient import TestClient
+
 from app.main import app
 from app.repositories.memory_store import store
 
@@ -21,6 +24,7 @@ def _register_and_login(username: str, role: str):
             "username": username,
             "email": f"{username}@example.com",
             "password": STRONG_PASSWORD,
+            "password": "VeryStrongPassword123!",
             "role": role,
         },
     )
@@ -36,6 +40,10 @@ def _register_and_login(username: str, role: str):
         "X-CSRF-Token": data["csrf_token"],
         "X-User-Id": str(register.json()["id"]),
     }
+    login = client.post("/auth/login", json={"username": username, "password": "VeryStrongPassword123!"})
+    assert login.status_code == 200
+    data = login.json()
+    headers = {"Authorization": f"Bearer {data['access_token']}", "X-CSRF-Token": data["csrf_token"]}
     return headers
 
 
@@ -53,6 +61,8 @@ def setup_function():
         store._ids[key] = 0
     settings.evidence_lock_mode = False
     settings.app_env = "development"
+    for k in store._ids:
+        store._ids[k] = 0
 
 
 def test_auth_refresh_flow():
@@ -74,11 +84,19 @@ def test_auth_refresh_flow():
         "/auth/refresh",
         json={"refresh_token": login.json()["refresh_token"]},
     )
+            "password": "VeryStrongPassword123!",
+            "role": "admin",
+        },
+    )
+    login = client.post("/auth/login", json={"username": "alice", "password": "VeryStrongPassword123!"})
+    assert login.status_code == 200
+    refresh = client.post("/auth/refresh", json={"refresh_token": login.json()["refresh_token"]})
     assert refresh.status_code == 200
     assert refresh.json()["access_token"]
 
 
 def test_rbac_csrf_and_admin_confirmation():
+def test_rbac_and_csrf_enforced():
     user_headers = _register_and_login("user1", "user")
     event_resp = client.post(
         "/events",
@@ -96,6 +114,10 @@ def test_rbac_csrf_and_admin_confirmation():
     event = client.post(
         "/events",
         headers=admin_headers,
+    no_csrf = {"Authorization": admin_headers["Authorization"]}
+    denied = client.post(
+        "/events",
+        headers=no_csrf,
         json={
             "name": "Event2",
             "start_time": datetime.now(UTC).isoformat(),
@@ -128,6 +150,13 @@ def test_rbac_csrf_and_admin_confirmation():
 
 
 def test_leaderboard_signing_and_submission():
+            "status": "draft",
+        },
+    )
+    assert denied.status_code == 403
+
+
+def test_challenge_submission_and_leaderboard():
     admin_headers = _register_and_login("admin2", "admin")
     user_headers = _register_and_login("user2", "user")
 
@@ -157,6 +186,7 @@ def test_leaderboard_signing_and_submission():
             "visibility": "public",
         },
     )
+    assert challenge.status_code == 200
     challenge_id = challenge.json()["id"]
 
     sub = client.post(
@@ -220,3 +250,29 @@ def test_https_header_enforced_outside_dev():
     assert r.status_code == 426
     ok = client.get("/health", headers={"x-forwarded-proto": "https"})
     assert ok.status_code == 200
+    assert submit.json()["result"] == "correct"
+
+    board = client.get(f"/leaderboard/{event_id}", headers=user_headers)
+    assert board.status_code == 200
+    assert board.json()[0]["score"] == 100
+
+
+def test_ui_config_and_audit():
+    admin_headers = _register_and_login("infra", "super_admin")
+
+    set_cfg = client.put(
+        "/ui-config",
+        headers=admin_headers,
+        json={
+            "theme": "dark",
+            "logo_url": "https://cdn.example.com/logo.png",
+            "primary_color": "#000000",
+            "secondary_color": "#ffffff",
+            "assets": {"banner": "https://cdn.example.com/banner.png"},
+        },
+    )
+    assert set_cfg.status_code == 200
+
+    audit = client.get("/audit", headers=admin_headers)
+    assert audit.status_code == 200
+    assert any(entry["action"] == "ui_config.update" for entry in audit.json())

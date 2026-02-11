@@ -13,6 +13,8 @@ from app.models.schema import (
     RoleCapability,
     SubChallenge,
     Submission,
+    Submission,
+    SubChallenge,
     Team,
     TeamMember,
     Tenant,

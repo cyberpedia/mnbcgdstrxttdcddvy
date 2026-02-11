@@ -23,6 +23,15 @@ function App() {
   const role = 'admin';
   const navItems = NAV_ITEMS.filter((item) => can(role, item.capability));
 
+  { to: '/challenges', label: 'Challenges' },
+  { to: '/leaderboard', label: 'Leaderboard' },
+  { to: '/profile', label: 'Profile' },
+  { to: '/notifications', label: 'Notifications' },
+  { to: '/admin', label: 'Admin' },
+  { to: '/guest-preview', label: 'Guest Preview' }
+];
+
+function App() {
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100" data-testid="app-shell">
@@ -37,6 +46,7 @@ function App() {
           <nav aria-label="Primary" className="mx-auto max-w-7xl px-4 pb-4">
             <ul className="flex flex-wrap gap-2">
               {navItems.map((item) => (
+              {NAV_ITEMS.map((item) => (
                 <li key={item.to}>
                   <Link
                     className="inline-block rounded-md border border-slate-400 px-3 py-1 text-sm hover:bg-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 dark:border-slate-600 dark:hover:bg-slate-800"
