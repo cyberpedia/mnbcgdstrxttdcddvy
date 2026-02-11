@@ -11,6 +11,8 @@ from app.models.schema import (
     Notification,
     Role,
     RoleCapability,
+    SubChallenge,
+    Submission,
     Submission,
     SubChallenge,
     Team,

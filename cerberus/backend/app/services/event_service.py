@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
+from fastapi import HTTPException
+
+from app.core.signing import SigningService
 from datetime import datetime
 
 from fastapi import HTTPException
@@ -20,6 +25,7 @@ class EventService:
             raise HTTPException(status_code=400, detail="Invalid event status")
         event_id = self.db.next_id("events")
         event = {"id": event_id, **payload}
+        event["signature"] = SigningService.sign(event)
         self.db.events[event_id] = event
         self.db.audit(actor_id, "event.create", f"event:{event_id}", after=event)
         return event
@@ -32,6 +38,8 @@ class EventService:
             raise HTTPException(status_code=400, detail="Invalid event status")
         before = event.copy()
         event["status"] = status
+        event["updated_at"] = datetime.now(UTC).isoformat()
+        event["signature"] = SigningService.sign({k: v for k, v in event.items() if k != "signature"})
         event["updated_at"] = datetime.utcnow().isoformat()
         self.db.audit(actor_id, "event.status", f"event:{event_id}", before=before, after=event)
         return event

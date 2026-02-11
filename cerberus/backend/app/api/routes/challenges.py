@@ -1,3 +1,12 @@
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
+
+from app.api.dependencies import (
+    get_challenge_service,
+    require_admin_confirmation,
+    require_capability,
+)
 from fastapi import APIRouter, Depends
 
 from app.api.dependencies import get_challenge_service, require_capability
@@ -28,6 +37,19 @@ def update_challenge(
     current_user: dict = Depends(require_capability("manage_challenges")),
     svc: ChallengeService = Depends(get_challenge_service),
 ):
+    return svc.update_challenge(
+        current_user["id"], challenge_id, payload.model_dump(exclude_none=True)
+    )
+
+
+@router.delete("/{challenge_id}")
+def delete_challenge(
+    challenge_id: int,
+    current_user: dict = Depends(require_capability("manage_challenges")),
+    _confirm: Annotated[None, Depends(require_admin_confirmation)] = None,
+    svc: ChallengeService = Depends(get_challenge_service),
+):
+    return svc.delete_challenge(current_user["id"], challenge_id)
     return svc.update_challenge(current_user["id"], challenge_id, payload.model_dump(exclude_none=True))
 
 

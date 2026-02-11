@@ -43,3 +43,10 @@ export function submitFlag(eventId, challengeId, flag, subChallengeId) {
   });
   return apiRequest(`/leaderboard/submit?${params.toString()}`, { method: 'POST' });
 }
+
+export function deleteChallenge(challengeId, confirmationPhrase) {
+  return apiRequest(`/challenges/${challengeId}`, {
+    method: 'DELETE',
+    headers: { 'X-Admin-Confirmation': confirmationPhrase }
+  });
+}

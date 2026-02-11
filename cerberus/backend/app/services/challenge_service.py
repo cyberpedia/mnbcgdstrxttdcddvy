@@ -29,11 +29,22 @@ class ChallengeService:
         self.db.audit(actor_id, "challenge.update", f"challenge:{challenge_id}", before=before, after=challenge)
         return challenge
 
+    def delete_challenge(self, actor_id: int, challenge_id: int) -> dict:
+        challenge = self.db.challenges.pop(challenge_id, None)
+        if not challenge:
+            raise HTTPException(status_code=404, detail="Challenge not found")
+        self.db.audit(actor_id, "challenge.delete", f"challenge:{challenge_id}", before=challenge)
+        return {"deleted": True, "id": challenge_id}
+
     def create_sub_challenge(self, actor_id: int, challenge_id: int, payload: dict) -> dict:
         if challenge_id not in self.db.challenges:
             raise HTTPException(status_code=404, detail="Challenge not found")
         sid = self.db.next_id("sub_challenges")
         entry = {"id": sid, "challenge_id": challenge_id, **payload}
+        if any(
+            sc["challenge_id"] == challenge_id and sc["order"] == payload["order"]
+            for sc in self.db.sub_challenges.values()
+        ):
         if any(sc["challenge_id"] == challenge_id and sc["order"] == payload["order"] for sc in self.db.sub_challenges.values()):
             raise HTTPException(status_code=409, detail="Duplicate sub-challenge order")
         self.db.sub_challenges[sid] = entry
@@ -44,6 +55,13 @@ class ChallengeService:
         if challenge_id not in self.db.challenges:
             raise HTTPException(status_code=404, detail="Challenge not found")
         hid = self.db.next_id("hints")
+        entry = {
+            "id": hid,
+            "challenge_id": challenge_id,
+            "content": sanitize_text(payload["content"]),
+            "penalty": payload["penalty"],
+            "enabled": payload["enabled"],
+        }
         entry = {"id": hid, "challenge_id": challenge_id, "content": sanitize_text(payload["content"]), "penalty": payload["penalty"], "enabled": payload["enabled"]}
         self.db.hints[hid] = entry
         self.db.audit(actor_id, "hint.create", f"hint:{hid}", after=entry)
@@ -66,6 +84,9 @@ class ChallengeService:
         if not prereq:
             return True
         return any(
+            s["user_id"] == user_id
+            and s["challenge_id"] == prereq
+            and s["result"] == "correct"
             s["user_id"] == user_id and s["challenge_id"] == prereq and s["result"] == "correct"
             for s in self.db.submissions
         )

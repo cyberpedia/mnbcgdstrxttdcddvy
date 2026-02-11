@@ -6,11 +6,25 @@ from app.api.routes import (
     auth,
     challenges,
     events,
+    files,
     leaderboard,
     notifications,
     ui_config,
 )
 from app.core.config import settings
+from app.core.security_middleware import (
+    AdaptiveRateLimiterMiddleware,
+    AuditMiddleware,
+    EvidenceLockMiddleware,
+    SecurityHeadersMiddleware,
+)
+
+app = FastAPI(title=settings.app_name, debug=settings.app_debug)
+
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(AdaptiveRateLimiterMiddleware)
+app.add_middleware(EvidenceLockMiddleware)
+app.add_middleware(AuditMiddleware)
 from app.core.rate_limit import InMemoryRateLimiter
 
 app = FastAPI(title=settings.app_name, debug=settings.app_debug)
@@ -31,8 +45,13 @@ app.include_router(leaderboard.router)
 app.include_router(notifications.router)
 app.include_router(ui_config.router)
 app.include_router(audit.router)
+app.include_router(files.router)
 
 
 @app.get("/health")
 def health() -> dict:
+    return {
+        "status": "ok",
+        "tls_min_version": settings.tls_min_version,
+    }
     return {"status": "ok"}

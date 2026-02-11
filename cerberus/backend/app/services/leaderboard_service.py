@@ -4,6 +4,7 @@ from collections import defaultdict
 
 from fastapi import HTTPException
 
+from app.core.signing import SigningService
 from app.repositories.memory_store import MemoryStore
 
 
@@ -36,6 +37,15 @@ class LeaderboardService:
             "result": result,
         }
         self.db.submissions.append(submission)
+        self.db.audit(
+            actor_id,
+            "submission.create",
+            f"submission:{submission['id']}",
+            after={k: v for k, v in submission.items() if k != "flag"},
+        )
+        return submission
+
+    def calculate(self, event_id: int) -> dict:
         self.db.audit(actor_id, "submission.create", f"submission:{submission['id']}", after=submission)
         return submission
 
@@ -51,6 +61,9 @@ class LeaderboardService:
         for hint in self.db.hints.values():
             if hint["enabled"]:
                 challenge_id = hint["challenge_id"]
+                users_for_challenge = {
+                    s["user_id"] for s in self.db.submissions if s["challenge_id"] == challenge_id
+                }
                 users_for_challenge = {s["user_id"] for s in self.db.submissions if s["challenge_id"] == challenge_id}
                 for uid in users_for_challenge:
                     penalties[uid] += hint["penalty"]
@@ -59,4 +72,8 @@ class LeaderboardService:
         for user_id, score in scores.items():
             rows.append({"user_id": user_id, "score": max(0, score - penalties[user_id])})
         rows.sort(key=lambda r: r["score"], reverse=True)
+
+        payload = {"event_id": event_id, "rows": rows}
+        signature = SigningService.sign(payload)
+        return {**payload, "signature": signature}
         return rows

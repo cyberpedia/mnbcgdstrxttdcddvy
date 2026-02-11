@@ -17,5 +17,6 @@ exclude_dirs = ["tests", "migrations"]
 skips = ["B101"]
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 pythonpath = ["app"]
 testpaths = ["tests"]

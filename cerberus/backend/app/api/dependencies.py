@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.core.config import settings
 from app.core.rbac import has_capability
 from app.core.security import decode_token
 from app.repositories.memory_store import store
@@ -74,3 +75,10 @@ def require_capability(capability: str):
         return user
 
     return dep
+
+
+def require_admin_confirmation(
+    x_admin_confirmation: str | None = Header(default=None),
+) -> None:
+    if x_admin_confirmation != settings.admin_confirmation_phrase:
+        raise HTTPException(status_code=412, detail="Admin action confirmation required")

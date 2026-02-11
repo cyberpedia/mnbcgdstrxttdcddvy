@@ -1,6 +1,7 @@
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
 
 import ThemeControls from './components/ThemeControls';
+import { can } from './hooks/useRbac';
 import { ThemeProvider } from './hooks/useTheme';
 import AdminPanelPage from './pages/AdminPanelPage';
 import ChallengePage from './pages/ChallengePage';
@@ -10,6 +11,18 @@ import NotificationCenterPage from './pages/NotificationCenterPage';
 import ProfilePage from './pages/ProfilePage';
 
 const NAV_ITEMS = [
+  { to: '/challenges', label: 'Challenges', capability: 'view_leaderboard' },
+  { to: '/leaderboard', label: 'Leaderboard', capability: 'view_leaderboard' },
+  { to: '/profile', label: 'Profile', capability: 'submit_flags' },
+  { to: '/notifications', label: 'Notifications', capability: 'send_notifications' },
+  { to: '/admin', label: 'Admin', capability: 'manage_ui_config' },
+  { to: '/guest-preview', label: 'Guest Preview', capability: 'submit_flags' }
+];
+
+function App() {
+  const role = 'admin';
+  const navItems = NAV_ITEMS.filter((item) => can(role, item.capability));
+
   { to: '/challenges', label: 'Challenges' },
   { to: '/leaderboard', label: 'Leaderboard' },
   { to: '/profile', label: 'Profile' },
@@ -32,6 +45,7 @@ function App() {
           </div>
           <nav aria-label="Primary" className="mx-auto max-w-7xl px-4 pb-4">
             <ul className="flex flex-wrap gap-2">
+              {navItems.map((item) => (
               {NAV_ITEMS.map((item) => (
                 <li key={item.to}>
                   <Link
