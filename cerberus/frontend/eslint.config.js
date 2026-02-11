@@ -36,8 +36,6 @@ export default [
       ...reactPlugin.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
-      "react/prop-types": "off",
-      "no-unused-vars": ["error", {"argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "caughtErrorsIgnorePattern": "^_"}],
       "security/detect-object-injection": "warn",
       "security/detect-non-literal-fs-filename": "warn",
       "security/detect-unsafe-regex": "warn"
