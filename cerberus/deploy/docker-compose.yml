@@ -1,0 +1,125 @@
+name: cerberus
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-cerberus}
+      POSTGRES_USER: ${DB_USER:-cerberus_app}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cerberus_app} -d ${DB_NAME:-cerberus}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      ENFORCE_HTTPS: "true"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-cerberus}
+      DB_USER: ${DB_USER:-cerberus_app}
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      JWT_SECRET_KEY_FILE: /run/secrets/jwt_secret
+      SIGNING_SECRET_FILE: /run/secrets/signing_secret
+      REDIS_URL: redis://redis:6379/0
+      CLOUD_STORAGE_ENDPOINT: ${CLOUD_STORAGE_ENDPOINT:-}
+      CLOUD_STORAGE_BUCKET: ${CLOUD_STORAGE_BUCKET:-}
+      CLOUD_REGION: ${CLOUD_REGION:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    secrets:
+      - db_password
+      - jwt_secret
+      - signing_secret
+    volumes:
+      - app_logs:/var/log/cerberus
+      - ../backend:/app:ro
+    networks:
+      - internal
+      - edge
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${CERBERUS_HTTP_PORT:-8080}:8080"
+    volumes:
+      - maintenance_state:/usr/share/nginx/html
+    networks:
+      - edge
+
+  loki:
+    image: grafana/loki:3.1.1
+    profiles: ["observability"]
+    command: ["-config.file=/etc/loki/loki-config.yml"]
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+    networks:
+      - edge
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    profiles: ["observability"]
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - edge
+
+volumes:
+  postgres_data:
+  redis_data:
+  app_logs:
+  maintenance_state:
+
+networks:
+  internal:
+    internal: true
+  edge:
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt
+  signing_secret:
+    file: ./secrets/signing_secret.txt
