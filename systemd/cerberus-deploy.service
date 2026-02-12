@@ -1,0 +1,21 @@
+[Unit]
+Description=Cerberus CTF Platform Deployment
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=cerberus
+Group=cerberus
+WorkingDirectory=/opt/cerberus
+EnvironmentFile=/opt/cerberus/.env
+ExecStart=/usr/local/bin/deploy-cerberus.sh
+RemainAfterExit=true
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/cerberus /var/run/docker.sock
+
+[Install]
+WantedBy=multi-user.target
