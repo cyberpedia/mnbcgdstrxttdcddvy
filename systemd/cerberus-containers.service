@@ -1,0 +1,17 @@
+[Unit]
+Description=Cerberus Container Stack (Docker Compose)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/cerberus/deploy
+Environment="COMPOSE_PROJECT_NAME=cerberus"
+ExecStart=/usr/bin/docker compose --env-file /opt/cerberus/deploy/.env -f /opt/cerberus/deploy/docker-compose.yml up -d --build
+ExecStop=/usr/bin/docker compose --env-file /opt/cerberus/deploy/.env -f /opt/cerberus/deploy/docker-compose.yml down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
