@@ -19,3 +19,8 @@ This directory contains the initial modular structure for the Cerberus CTF platf
 - Implement backend API framework and data models.
 - Implement frontend app routes and core UI.
 - Wire CI for linting, tests, and security checks.
+
+
+## Phase 6 Deployment
+
+See `docs/deployment-phase6.md` for production Docker Compose deployment, systemd container orchestration, maintenance mode, backup/restore, and CI container build checks.

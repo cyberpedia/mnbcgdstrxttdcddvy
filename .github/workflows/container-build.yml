@@ -1,0 +1,24 @@
+name: container-build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  docker-images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build backend image
+        run: docker build -f cerberus/backend/Dockerfile -t cerberus/backend:ci cerberus/backend
+      - name: Build frontend image
+        run: docker build -f cerberus/frontend/Dockerfile -t cerberus/frontend:ci cerberus/frontend
+      - name: Compose validation
+        run: |
+          cp cerberus/deploy/.env.example cerberus/deploy/.env
+          mkdir -p cerberus/deploy/secrets
+          printf 'devpass\n' > cerberus/deploy/secrets/db_password.txt
+          printf 'devjwt\n' > cerberus/deploy/secrets/jwt_secret.txt
+          printf 'devsign\n' > cerberus/deploy/secrets/signing_secret.txt
+          docker compose -f cerberus/deploy/docker-compose.yml --env-file cerberus/deploy/.env config >/dev/null
