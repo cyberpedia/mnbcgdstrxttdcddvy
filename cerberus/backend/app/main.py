@@ -25,6 +25,11 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AdaptiveRateLimiterMiddleware)
 app.add_middleware(EvidenceLockMiddleware)
 app.add_middleware(AuditMiddleware)
+from app.core.rate_limit import InMemoryRateLimiter
+
+app = FastAPI(title=settings.app_name, debug=settings.app_debug)
+
+app.add_middleware(InMemoryRateLimiter)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -49,3 +54,4 @@ def health() -> dict:
         "status": "ok",
         "tls_min_version": settings.tls_min_version,
     }
+    return {"status": "ok"}

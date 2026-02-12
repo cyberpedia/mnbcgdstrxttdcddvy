@@ -27,6 +27,7 @@ def _make_token(
     expires_minutes: int,
     extra: dict[str, Any] | None = None,
 ) -> str:
+def _make_token(subject: str, token_type: str, expires_minutes: int, extra: dict[str, Any] | None = None) -> str:
     now = datetime.now(UTC)
     payload: dict[str, Any] = {
         "sub": subject,
@@ -44,6 +45,7 @@ def create_access_token(subject: str, role: str, csrf_token: str) -> str:
     return _make_token(
         subject=subject,
         token_type="access",  # nosec B106
+        token_type="access",
         expires_minutes=settings.access_token_exp_minutes,
         extra={"role": role, "csrf": csrf_token},
     )
@@ -55,6 +57,7 @@ def create_refresh_token(subject: str) -> str:
         token_type="refresh",  # nosec B106
         expires_minutes=settings.refresh_token_exp_minutes,
     )
+    return _make_token(subject=subject, token_type="refresh", expires_minutes=settings.refresh_token_exp_minutes)
 
 
 def decode_token(token: str) -> dict[str, Any]:

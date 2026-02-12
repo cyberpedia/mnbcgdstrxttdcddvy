@@ -15,3 +15,8 @@ Phase 4 frontend implementation using React + TailwindCSS.
 - No backend secrets are exposed in JavaScript.
 - API requests include CSRF token headers only after login.
 - Text rendering avoids raw HTML injection patterns.
+- `components/`: Reusable UI components.
+- `pages/`: Route-level page components.
+- `services/`: API clients and integration logic.
+- `hooks/`: Shared React hooks.
+- `assets/`: Static assets.

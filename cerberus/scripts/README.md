@@ -14,3 +14,4 @@
 ## Testing
 
 - `test-suite.sh`: runs Phase 8 unit/integration/security/e2e suites with coverage outputs.
+Automation scripts for local development and CI/CD tasks.

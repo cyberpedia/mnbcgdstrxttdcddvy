@@ -9,6 +9,7 @@ export default [
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
     ignores: ["dist/**", "node_modules/**", "coverage/**"],
+    ignores: ["dist/**", "node_modules/**"],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -38,6 +39,7 @@ export default [
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
       "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "caughtErrorsIgnorePattern": "^_" }],
+      "no-unused-vars": ["error", {"argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "caughtErrorsIgnorePattern": "^_"}],
       "security/detect-object-injection": "warn",
       "security/detect-non-literal-fs-filename": "warn",
       "security/detect-unsafe-regex": "warn"
