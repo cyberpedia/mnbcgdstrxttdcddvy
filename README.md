@@ -17,6 +17,7 @@ This repository contains reproducible hardening and bootstrap assets for an Ubun
 
 ## Quick start (one command)
 
+Run on a fresh Ubuntu 22.04 host as root (replace the placeholder URL with your hosted copy of `scripts/phase0-setup.sh`):
 Run on a fresh Ubuntu 22.04 host as root:
 
 ```bash
@@ -26,6 +27,7 @@ curl -fsSL https://example.invalid/phase0-setup.sh | sudo bash
 If running from a checked-out repository:
 
 ```bash
+sudo CERBERUS_DB_PASSWORD='<strong-password>' ./scripts/one-command-bootstrap.sh
 sudo CERBERUS_DB_PASSWORD='<strong-password>' ./scripts/phase0-setup.sh
 ```
 

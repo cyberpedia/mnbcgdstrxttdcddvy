@@ -8,6 +8,7 @@ export default [
   js.configs.recommended,
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
+    ignores: ["dist/**", "node_modules/**", "coverage/**"],
     ignores: ["dist/**", "node_modules/**"],
     languageOptions: {
       globals: {
@@ -37,10 +38,25 @@ export default [
       ...reactHooks.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
+      "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "caughtErrorsIgnorePattern": "^_" }],
       "no-unused-vars": ["error", {"argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "caughtErrorsIgnorePattern": "^_"}],
       "security/detect-object-injection": "warn",
       "security/detect-non-literal-fs-filename": "warn",
       "security/detect-unsafe-regex": "warn"
+    }
+  },
+  {
+    files: ["src/test/**/*.{js,jsx}"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        describe: "readonly",
+        it: "readonly",
+        expect: "readonly",
+        beforeEach: "readonly",
+        afterEach: "readonly",
+        vi: "readonly"
+      }
     }
   }
 ];

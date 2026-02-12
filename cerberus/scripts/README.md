@@ -9,4 +9,9 @@
 
 - `backup.sh`: Postgres + Redis backup (supports OpenSSL encryption via `BACKUP_PASSPHRASE`).
 - `restore.sh`: restore from backup archive.
+
+
+## Testing
+
+- `test-suite.sh`: runs Phase 8 unit/integration/security/e2e suites with coverage outputs.
 Automation scripts for local development and CI/CD tasks.

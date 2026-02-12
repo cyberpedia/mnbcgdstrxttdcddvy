@@ -8,6 +8,7 @@
 - [API Reference](./api-reference.md)
 - [Deployment & Maintenance Guide](./deployment-maintenance-guide.md)
 - [Security Best Practices](./security-best-practices.md)
+- [Testing Guide](./testing-phase8.md)
 
 ## PDF Export
 

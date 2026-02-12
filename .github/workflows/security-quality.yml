@@ -23,6 +23,13 @@ jobs:
         run: ruff check app tests
       - name: Bandit security lint
         run: bandit -q -r app
+      - name: Pytest + coverage
+        run: pytest -q --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: cerberus/backend/coverage.xml
       - name: Pytest
         run: pytest -q
 
@@ -40,5 +47,14 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run lint
+      - name: Test + coverage
+        run: npm run test
+      - name: Build
+        run: npm run build
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: cerberus/frontend/coverage
       - name: Build
         run: npm run build
