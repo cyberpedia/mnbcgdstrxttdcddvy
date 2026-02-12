@@ -1,0 +1,222 @@
+name: cerberus
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-cerberus}
+      POSTGRES_USER: ${DB_USER:-cerberus_app}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cerberus_app} -d ${DB_NAME:-cerberus}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      ENFORCE_HTTPS: "true"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-cerberus}
+      DB_USER: ${DB_USER:-cerberus_app}
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      JWT_SECRET_KEY_FILE: /run/secrets/jwt_secret
+      SIGNING_SECRET_FILE: /run/secrets/signing_secret
+      REDIS_URL: redis://redis:6379/0
+      CLOUD_STORAGE_ENDPOINT: ${CLOUD_STORAGE_ENDPOINT:-}
+      CLOUD_STORAGE_BUCKET: ${CLOUD_STORAGE_BUCKET:-}
+      CLOUD_REGION: ${CLOUD_REGION:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    secrets:
+      - db_password
+      - jwt_secret
+      - signing_secret
+    volumes:
+      - app_logs:/var/log/cerberus
+      - ../backend:/app:ro
+    networks:
+      - internal
+      - edge
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${CERBERUS_HTTP_PORT:-8080}:8080"
+    volumes:
+      - maintenance_state:/usr/share/nginx/html
+    networks:
+      - edge
+
+  loki:
+    image: grafana/loki:3.1.1
+    profiles: ["observability"]
+    command: ["-config.file=/etc/loki/loki-config.yml"]
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+    networks:
+      - edge
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    profiles: ["observability"]
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - edge
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: ["observability"]
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - edge
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    profiles: ["observability"]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - edge
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    profiles: ["observability"]
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    networks:
+      - edge
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    profiles: ["observability"]
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    volumes:
+      - '/:/host:ro,rslave'
+    networks:
+      - edge
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    profiles: ["observability"]
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - edge
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    profiles: ["observability"]
+    environment:
+      DATA_SOURCE_URI: postgres:5432/${DB_NAME:-cerberus}?sslmode=disable
+      DATA_SOURCE_USER: ${DB_USER:-cerberus_app}
+      DATA_SOURCE_PASS_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    depends_on:
+      - postgres
+    networks:
+      - internal
+      - edge
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.62.0
+    profiles: ["observability"]
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - internal
+      - edge
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    profiles: ["observability"]
+    command: ["--config.file=/etc/blackbox/blackbox.yml"]
+    volumes:
+      - ./blackbox/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    networks:
+      - edge
+
+volumes:
+  postgres_data:
+  redis_data:
+  app_logs:
+  maintenance_state:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  internal:
+    internal: true
+  edge:
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt
+  signing_secret:
+    file: ./secrets/signing_secret.txt

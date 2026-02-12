@@ -1,0 +1,12 @@
+route:
+  receiver: default-webhook
+  group_by: [alertname, severity]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 2h
+
+receivers:
+  - name: default-webhook
+    webhook_configs:
+      - url: http://backend:8000/notifications/admin-alert
+        send_resolved: true

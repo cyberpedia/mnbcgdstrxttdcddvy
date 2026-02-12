@@ -1,0 +1,31 @@
+groups:
+  - name: cerberus-availability
+    rules:
+      - alert: BackendDown
+        expr: probe_success{job="backend-health"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend health endpoint is failing"
+      - alert: FrontendDown
+        expr: probe_success{job="frontend-health"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Frontend probe is failing"
+      - alert: RedisUnavailable
+        expr: up{job="redis"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis exporter unavailable"
+      - alert: PostgresUnavailable
+        expr: up{job="postgres"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Postgres exporter unavailable"

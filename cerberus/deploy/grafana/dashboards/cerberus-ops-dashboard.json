@@ -1,0 +1,51 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Backend Probe",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [{"expr": "probe_success{job='backend-health'}", "refId": "A"}],
+      "fieldConfig": {"defaults": {"mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": 0}, {"color": "green", "value": 1}]}}}
+    },
+    {
+      "type": "stat",
+      "title": "Frontend Probe",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [{"expr": "probe_success{job='frontend-health'}", "refId": "A"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Container CPU Usage %",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [{"expr": "sum(rate(container_cpu_usage_seconds_total{name=~'.+'}[5m])) by (name) * 100", "refId": "A"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "PostgreSQL Connections",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [{"expr": "pg_stat_database_numbackends{datname='cerberus'}", "refId": "A"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Redis Connected Clients",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "targets": [{"expr": "redis_connected_clients", "refId": "A"}]
+    },
+    {
+      "type": "logs",
+      "title": "Recent Errors (Loki)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "datasource": {"type": "loki", "uid": "-- Grafana --"},
+      "targets": [{"expr": "{job=~'docker'} |= 'ERROR'", "refId": "A"}]
+    }
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["cerberus", "operations"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "title": "Cerberus Operations Dashboard",
+  "version": 1
+}
