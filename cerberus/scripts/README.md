@@ -9,3 +9,4 @@
 
 - `backup.sh`: Postgres + Redis backup (supports OpenSSL encryption via `BACKUP_PASSPHRASE`).
 - `restore.sh`: restore from backup archive.
+Automation scripts for local development and CI/CD tasks.

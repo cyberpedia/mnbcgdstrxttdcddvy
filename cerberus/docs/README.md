@@ -16,3 +16,6 @@ See [PDF Export Guide](./pdf-export.md) or run:
 ```bash
 ./cerberus/scripts/export-docs-pdf.sh
 ```
+# Documentation
+
+Place architecture docs, ADRs, deployment guides, and security runbooks in this directory.

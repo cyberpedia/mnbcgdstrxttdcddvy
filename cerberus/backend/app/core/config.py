@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     tls_ciphers: str = "ECDHE+AESGCM:ECDHE+CHACHA20"
 
     signing_secret: str = "change-signing-secret"
+    rate_limit_per_minute: int = 120
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

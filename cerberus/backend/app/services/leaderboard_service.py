@@ -46,6 +46,10 @@ class LeaderboardService:
         return submission
 
     def calculate(self, event_id: int) -> dict:
+        self.db.audit(actor_id, "submission.create", f"submission:{submission['id']}", after=submission)
+        return submission
+
+    def calculate(self, event_id: int) -> list[dict]:
         scores = defaultdict(int)
         for sub in self.db.submissions:
             if sub["event_id"] != event_id:
@@ -60,6 +64,7 @@ class LeaderboardService:
                 users_for_challenge = {
                     s["user_id"] for s in self.db.submissions if s["challenge_id"] == challenge_id
                 }
+                users_for_challenge = {s["user_id"] for s in self.db.submissions if s["challenge_id"] == challenge_id}
                 for uid in users_for_challenge:
                     penalties[uid] += hint["penalty"]
 
@@ -71,3 +76,4 @@ class LeaderboardService:
         payload = {"event_id": event_id, "rows": rows}
         signature = SigningService.sign(payload)
         return {**payload, "signature": signature}
+        return rows
