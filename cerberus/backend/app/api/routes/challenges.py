@@ -7,6 +7,9 @@ from app.api.dependencies import (
     require_admin_confirmation,
     require_capability,
 )
+from fastapi import APIRouter, Depends
+
+from app.api.dependencies import get_challenge_service, require_capability
 from app.schemas.challenge import (
     ChallengeCreate,
     ChallengeUpdate,
@@ -47,6 +50,7 @@ def delete_challenge(
     svc: ChallengeService = Depends(get_challenge_service),
 ):
     return svc.delete_challenge(current_user["id"], challenge_id)
+    return svc.update_challenge(current_user["id"], challenge_id, payload.model_dump(exclude_none=True))
 
 
 @router.post("/{challenge_id}/sub-challenges")

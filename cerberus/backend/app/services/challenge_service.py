@@ -45,6 +45,7 @@ class ChallengeService:
             sc["challenge_id"] == challenge_id and sc["order"] == payload["order"]
             for sc in self.db.sub_challenges.values()
         ):
+        if any(sc["challenge_id"] == challenge_id and sc["order"] == payload["order"] for sc in self.db.sub_challenges.values()):
             raise HTTPException(status_code=409, detail="Duplicate sub-challenge order")
         self.db.sub_challenges[sid] = entry
         self.db.audit(actor_id, "sub_challenge.create", f"sub_challenge:{sid}", after=entry)
@@ -61,6 +62,7 @@ class ChallengeService:
             "penalty": payload["penalty"],
             "enabled": payload["enabled"],
         }
+        entry = {"id": hid, "challenge_id": challenge_id, "content": sanitize_text(payload["content"]), "penalty": payload["penalty"], "enabled": payload["enabled"]}
         self.db.hints[hid] = entry
         self.db.audit(actor_id, "hint.create", f"hint:{hid}", after=entry)
         return entry
@@ -85,5 +87,6 @@ class ChallengeService:
             s["user_id"] == user_id
             and s["challenge_id"] == prereq
             and s["result"] == "correct"
+            s["user_id"] == user_id and s["challenge_id"] == prereq and s["result"] == "correct"
             for s in self.db.submissions
         )

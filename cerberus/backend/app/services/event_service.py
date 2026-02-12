@@ -5,6 +5,10 @@ from datetime import UTC, datetime
 from fastapi import HTTPException
 
 from app.core.signing import SigningService
+from datetime import datetime
+
+from fastapi import HTTPException
+
 from app.repositories.memory_store import MemoryStore
 
 
@@ -36,5 +40,6 @@ class EventService:
         event["status"] = status
         event["updated_at"] = datetime.now(UTC).isoformat()
         event["signature"] = SigningService.sign({k: v for k, v in event.items() if k != "signature"})
+        event["updated_at"] = datetime.utcnow().isoformat()
         self.db.audit(actor_id, "event.status", f"event:{event_id}", before=before, after=event)
         return event
